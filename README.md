@@ -25,3 +25,10 @@ HTML, CSS, JavaScript
 
 ## Capstone
 Built for the Google x Kaggle 5-Day AI Agents Intensive — Track: Agents for Business
+
+## Screenshots
+
+![Store Floor Map](Store_Floor_Map.png)
+![Shelf Alert](Shelf_Alert.png)
+![Cashier Register](Cashier_Register.png)
+![AI Stock Monitor](AI_Stock_Monitor.png)
