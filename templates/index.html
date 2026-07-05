@@ -1,0 +1,311 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>StoreEx - Real-Time Store Manager</title>
+    <!-- Google Fonts for premium typography -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800&family=Plus+Jakarta+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+</head>
+<body>
+    <!-- Main Dashboard Container (Viewport-locked, no scrolling) -->
+    <div class="dashboard">
+        <!-- Top Navigation Bar -->
+        <header class="app-header">
+            <div class="logo-area">
+                <span class="logo-icon">🏪</span>
+                <div class="logo-text">
+                    <h1>StoreEx</h1>
+                    <p data-i18n="logo_subtitle">Convenience Control & Register</p>
+                </div>
+            </div>
+            <nav class="tab-navigation">
+                <button class="nav-btn active" id="tab-map-btn" onclick="switchTab('map')">
+                    <span class="btn-icon">🗺️</span> <span data-i18n="nav_floor_map">Store Floor Map</span>
+                </button>
+                <button class="nav-btn" id="tab-register-btn" onclick="switchTab('register')">
+                    <span class="btn-icon">💵</span> <span data-i18n="nav_register">Cashier Register</span>
+                </button>
+                <button class="nav-btn" id="tab-agent-btn" onclick="switchTab('agent')">
+                    <span class="btn-icon">🤖</span> <span data-i18n="nav_agent">AI Stock Monitor</span>
+                </button>
+            </nav>
+            <div class="header-right">
+                <div class="lang-switcher">
+                    <button class="lang-btn active" id="lang-en-btn" onclick="changeLanguage('en')">English</button>
+                    <button class="lang-btn" id="lang-es-btn" onclick="changeLanguage('es')">Español</button>
+                    <button class="lang-btn" id="lang-hi-btn" onclick="changeLanguage('hi')">हिन्दी</button>
+                </div>
+                <div class="system-time" id="system-time">
+                    Jul 3, 2026 6:10 PM
+                </div>
+            </div>
+        </header>
+
+        <!-- Main View Area -->
+        <main class="view-container">
+            <!-- TAB 1: STORE FLOOR MAP -->
+            <section id="view-map" class="tab-view active-view">
+                <div class="map-layout">
+                    <!-- Left: Store Floor Plan -->
+                    <div class="map-section store-floor">
+                        <div class="section-header">
+                            <h2 data-i18n="heading_floor_shelves">Sales Floor Shelves</h2>
+                            <span class="badge" data-i18n="badge_customer_area">Customer Area</span>
+                        </div>
+                        <div class="grid-container" id="store-floor-grid">
+                            <!-- Shelves rendered dynamically via JS -->
+                        </div>
+                    </div>
+
+                    <!-- Visual Divider Wall -->
+                    <div class="map-divider">
+                        <div class="divider-line"></div>
+                        <div class="divider-door" data-i18n="divider_door">🚪 Backroom Door</div>
+                        <div class="divider-line"></div>
+                    </div>
+
+                    <!-- Right: Backroom Storage -->
+                    <div class="map-section store-backroom">
+                        <div class="section-header">
+                            <h2 data-i18n="heading_backroom_inventory">Backroom Inventory</h2>
+                            <span class="badge secondary" data-i18n="badge_staff_only">Staff Only</span>
+                        </div>
+                        <div class="grid-container" id="store-backroom-grid">
+                            <!-- Backroom storage boxes rendered dynamically via JS -->
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- TAB 2: CASHIER REGISTER -->
+            <section id="view-register" class="tab-view">
+                <div class="register-layout">
+                    <!-- Left: Checkout interface -->
+                    <div class="register-panel checkout-box">
+                        <h2 class="panel-title" data-i18n="title_new_transaction">New Transaction</h2>
+                        
+                        <div class="register-input-row">
+                            <div class="form-group select-group">
+                                <label for="product-select" data-i18n="label_select_product">Select Product to Scan</label>
+                                <select id="product-select" class="large-select" onchange="onProductSelectChange()">
+                                    <option value="" disabled selected data-i18n="option_select_item">Select an item...</option>
+                                    <!-- Options populated by JS -->
+                                </select>
+                            </div>
+                            <div class="form-group quantity-group">
+                                <label for="product-qty" data-i18n="label_quantity">Quantity</label>
+                                <input type="number" id="product-qty" class="large-input quantity-input" min="1" value="1">
+                            </div>
+                            <div class="form-group add-group">
+                                <label class="label-empty">&nbsp;</label>
+                                <button id="add-item-btn" class="btn-large-action" onclick="addToSale()" disabled>
+                                    ➕ <span data-i18n="btn_add_item">Add</span>
+                                </button>
+                            </div>
+                        </div>
+
+                        <!-- Current Sale Cart Table -->
+                        <div class="cart-container">
+                            <h3 class="cart-title" data-i18n="title_current_sale">Current Transaction Items</h3>
+                            <div class="cart-list" id="cart-list">
+                                <!-- Empty state or items list -->
+                                <div class="empty-cart" id="empty-cart-msg" data-i18n="text_empty_cart">
+                                    No items added to this transaction yet.
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Big Expiry Alert Container -->
+                        <div id="register-expiry-alert" class="expiry-alert-box hidden">
+                            <!-- Warning text injected here -->
+                        </div>
+
+                        <div class="register-stats grid-2">
+                            <div class="stat-card">
+                                <span class="stat-label" data-i18n="label_backroom_qty">Backroom Quantity</span>
+                                <span class="stat-val" id="register-backroom-qty">--</span>
+                            </div>
+                            <div class="stat-card">
+                                <span class="stat-label" data-i18n="label_expiry_date">Expiration Date</span>
+                                <span class="stat-val" id="register-expiry-date">--</span>
+                            </div>
+                        </div>
+
+                        <button id="process-sale-btn" class="btn-huge-action" onclick="processSale()" disabled>
+                            💳 <span data-i18n="btn_process_sale">Process Sale</span>
+                        </button>
+                    </div>
+
+                    <!-- Right: Recent Activity Log -->
+                    <div class="register-panel log-box">
+                        <h2 class="panel-title" data-i18n="title_transaction_log">Transaction Log & Notifications</h2>
+                        <div class="log-stream" id="log-stream">
+                            <div class="log-entry system-msg">
+                                <span class="time">18:09</span>
+                                <span class="msg" data-i18n="system_initialized_msg">System initialized. Convenience store database loaded.</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- TAB 3: AI STOCK MONITOR -->
+            <section id="view-agent" class="tab-view">
+                <div class="agent-layout">
+                    <!-- Left: Control panel & Diagnostics -->
+                    <div class="agent-panel control-box">
+                        <h2 class="panel-title" data-i18n="title_agent_control">Agent Control Center</h2>
+                        
+                        <!-- AI Brain Pulsing Animation Card -->
+                        <div class="brain-card">
+                            <div class="brain-container">
+                                <!-- A sleek, high-tech animated SVG of a brain/network -->
+                                <svg class="brain-svg" viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg">
+                                    <defs>
+                                        <radialGradient id="brain-glow" cx="50%" cy="50%" r="50%">
+                                            <stop offset="0%" stop-color="var(--color-green)" stop-opacity="0.3"/>
+                                            <stop offset="100%" stop-color="transparent" stop-opacity="0"/>
+                                        </radialGradient>
+                                    </defs>
+                                    <circle class="glow-circle" cx="50%" cy="50%" r="35" fill="url(#brain-glow)" />
+                                    <!-- Left side neural connections -->
+                                    <path class="brain-hemisphere left-hem" d="M 46 25 C 32 22, 20 30, 20 45 C 20 58, 30 65, 46 75 C 46 65, 40 60, 40 50 C 40 40, 46 35, 46 25 Z" fill="none" stroke="currentColor" stroke-width="2" />
+                                    <!-- Right side neural connections -->
+                                    <path class="brain-hemisphere right-hem" d="M 54 25 C 68 22, 80 30, 80 45 C 80 58, 70 65, 54 75 C 54 65, 60 60, 60 50 C 60 40, 54 35, 54 25 Z" fill="none" stroke="currentColor" stroke-width="2" />
+                                    <!-- Inner neural network nodes -->
+                                    <circle class="node pulse-node-1" cx="30" cy="38" r="3" />
+                                    <circle class="node pulse-node-2" cx="35" cy="55" r="3.5" />
+                                    <circle class="node pulse-node-3" cx="50" cy="35" r="4" />
+                                    <circle class="node pulse-node-4" cx="65" cy="38" r="3" />
+                                    <circle class="node pulse-node-5" cx="70" cy="52" r="3" />
+                                    <circle class="node pulse-node-6" cx="50" cy="65" r="4" />
+                                    <!-- Synapse connections -->
+                                    <line class="synapse line-1" x1="30" y1="38" x2="35" y2="55" />
+                                    <line class="synapse line-2" x1="35" y1="55" x2="50" y2="65" />
+                                    <line class="synapse line-3" x1="50" y1="65" x2="70" y2="52" />
+                                    <line class="synapse line-4" x1="70" y1="52" x2="65" y2="38" />
+                                    <line class="synapse line-5" x1="65" y1="38" x2="50" y2="35" />
+                                    <line class="synapse line-6" x1="50" y1="35" x2="30" y2="38" />
+                                    <line class="synapse line-7" x1="35" y1="55" x2="50" y2="35" />
+                                    <line class="synapse line-8" x1="65" y1="38" x2="50" y2="65" />
+                                </svg>
+                            </div>
+                            <div class="agent-brand">
+                                <span class="agent-title" data-i18n="agent_title">Gemini Stock Intelligence</span>
+                                <span class="agent-subtitle" data-i18n="agent_subtitle">Autonomous Inventory Monitoring</span>
+                            </div>
+                        </div>
+
+                        <!-- Status & Metadata grid -->
+                        <div class="agent-meta-grid">
+                            <div class="meta-item">
+                                <span class="meta-label" data-i18n="label_agent_state">Agent State</span>
+                                <span class="meta-val status-badge-val idle" id="agent-status-badge">Idle</span>
+                            </div>
+                            <div class="meta-item">
+                                <span class="meta-label" data-i18n="label_llm_engine">LLM Engine</span>
+                                <span class="meta-val highlight-blue">Gemini 2.5 Flash</span>
+                            </div>
+                            <div class="meta-item">
+                                <span class="meta-label" data-i18n="label_last_audit">Last Audit Run</span>
+                                <span class="meta-val" id="agent-last-run">--</span>
+                            </div>
+                        </div>
+
+                        <!-- Control buttons -->
+                        <div class="agent-controls">
+                            <button id="run-agent-scan-btn" class="btn-huge-action agent-scan-btn" onclick="triggerAgentScan()">
+                                <span class="btn-spinner hidden" id="agent-btn-spinner"></span>
+                                <span id="agent-btn-text" data-i18n="btn_run_scan">⚡ Run Manual Scan</span>
+                            </button>
+                        </div>
+                    </div>
+
+                    <!-- Right: Alert board & Reasoned output -->
+                    <div class="agent-panel alerts-box">
+                        <h2 class="panel-title" data-i18n="title_active_alerts">Active Alert Stream</h2>
+                        
+                        <!-- Overall executive summary -->
+                        <div class="executive-summary-card">
+                            <div class="card-icon">🧠</div>
+                            <div class="card-content">
+                                <h3 data-i18n="title_exec_summary">Executive Health Summary</h3>
+                                <p id="agent-executive-summary" data-i18n="agent_summary_placeholder">No active scan data. Please trigger a scan to analyze inventory.</p>
+                            </div>
+                        </div>
+
+                        <!-- Alerts container -->
+                        <div class="agent-alerts-list" id="agent-alerts-list">
+                            <!-- Injected dynamically by JS -->
+                            <div class="empty-alerts">
+                                <span class="empty-icon">🤖</span>
+                                <p data-i18n="text_waiting_scan">Waiting for scan execution...</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </section>
+        </main>
+    </div>
+
+    <!-- Shelf Action Modal Overlay -->
+    <div id="details-modal" class="modal-overlay hidden" onclick="closeModalOnOutsideClick(event)">
+        <div class="modal-card animate-pop">
+            <div class="modal-header">
+                <span id="modal-status-badge" class="modal-badge">Healthy</span>
+                <button class="close-btn" onclick="closeModal()">×</button>
+            </div>
+            <div class="modal-body">
+                <h2 id="modal-product-name">Product Name</h2>
+                <div class="location-chips">
+                    <span id="modal-shelf-location" class="chip">Shelf A1</span>
+                    <span id="modal-backroom-location" class="chip">Backroom Cold Storage</span>
+                </div>
+
+                <div class="modal-details-grid">
+                    <div class="detail-tile">
+                        <span class="tile-title" data-i18n="label_modal_backroom_stock">Backroom Stock</span>
+                        <span class="tile-value" id="modal-qty">0</span>
+                    </div>
+                    <div class="detail-tile">
+                        <span class="tile-title" data-i18n="label_modal_deliveries">Total Deliveries</span>
+                        <span class="tile-value" id="modal-deliveries">0</span>
+                    </div>
+                    <div class="detail-tile">
+                        <span class="tile-title" data-i18n="label_modal_sales">Total Sales</span>
+                        <span class="tile-value" id="modal-sales">0</span>
+                    </div>
+                </div>
+
+                <div class="problem-box">
+                    <h3 data-i18n="title_modal_status">Current Status</h3>
+                    <p id="modal-problem">No issues detected.</p>
+                </div>
+
+                <div class="action-box">
+                    <h3 data-i18n="title_modal_action">Required Action</h3>
+                    <p id="modal-action">Keep shelf tidy.</p>
+                </div>
+
+                <!-- Replenishment Utility (Exceeding expectations, adds high value) -->
+                <div class="replenish-form">
+                    <h3 data-i18n="title_modal_receive">Receive Delivery</h3>
+                    <div class="input-row">
+                        <input type="number" id="replenish-qty" min="1" max="100" value="10" placeholder="Qty">
+                        <button class="btn-action" onclick="submitReplenishment()">🚚 <span data-i18n="btn_receive_stock">Receive Stock</span></button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Active Toast Notifications -->
+    <div id="toast-container" class="toast-container"></div>
+
+    <script src="{{ url_for('static', filename='js/app.js') }}"></script>
+</body>
+</html>
