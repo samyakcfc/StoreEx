@@ -28,7 +28,7 @@ Built for the Google x Kaggle 5-Day AI Agents Intensive — Track: Agents for Bu
 
 ## Screenshots
 
-![Store Floor Map](Store_Floor_Map.png)
-![Shelf Alert](Shelf_Alert.png)
-![Cashier Register](Cashier_Register.png)
-![AI Stock Monitor](AI_Stock_Monitor.png)
+![Store Floor Map](Store%20Floor%20Map.png)
+![Shelf Alert](Shelf%20Alert.png)
+![Cashier Register](Cashier%20Register.png)
+![AI Stock Monitor](AI%20Stock%20Monitor.png)
